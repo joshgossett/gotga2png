@@ -76,6 +76,7 @@ func doflags() {
 	} else if !f.IsDir() {
 		panic(f.Name() + " is not a valid directory!")
 	}
+
 }
 
 //converttga should always be called in a new go function
