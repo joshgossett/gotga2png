@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	// "runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -23,6 +24,11 @@ var path string
 var outdir string
 
 func main() {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered from panic: ", r)
+		}
+	}()
 	doflags()
 
 	walkdir("/Users/Josh")
@@ -60,14 +66,20 @@ func doflags() {
 	flag.StringVar(&path, "path", "", "Folder with targa files")
 	flag.StringVar(&outdir, "out", "", "Output folder where png files will be saved")
 	inplace := flag.Bool("i", false, "If set, will ignore output directory and convert files inplace")
+	flag.Parse()
 
 	//check flags
-
-	flag.Parse()
+	if f, err := os.Stat(path); os.IsNotExist(err) {
+		panic(err)
+	} else if err != nil {
+		panic(err)
+	} else if !f.IsDir() {
+		panic(f.Name() + " is not a valid directory!")
+	}
 }
 
 //converttga should always be called in a new go function
-func converttga(fname string, outdir string) {
+func converttga(fname string) {
 	defer wg.Done()
 	file, err := os.Open(fname)
 	if err != nil {
@@ -79,4 +91,8 @@ func converttga(fname string, outdir string) {
 		fmt.Println("Error decoding file: ", fname, "\n>>", err.Error())
 		return
 	}
+}
+
+func getfinaldir(fname string) string {
+	return "" + "hi"
 }
