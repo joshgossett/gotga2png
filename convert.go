@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -15,6 +16,8 @@ var dircount int64
 var errorcount int64
 
 func main() {
+	doflags()
+
 	walkdir("/Users/Josh")
 	wg.Wait()
 	fmt.Printf("Found %d file %d directories and encountered %d errors", filecount, dircount, errorcount)
@@ -44,4 +47,12 @@ func walkdir(dir string) {
 			}(v, dir)
 		}
 	}
+}
+
+func doflags() {
+	path := flag.String("path", "", "Folder with targa files")
+	outdir := flag.String("out", "", "Output folder where png files will be saved")
+	inplace := flag.Bool("i", false, "If set, will ignore output directory and convert files inplace")
+
+	flag.Parse()
 }
