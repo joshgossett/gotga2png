@@ -3,9 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/ftrvxmtrx/tga"
+	"image/png"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -14,6 +17,10 @@ var wg sync.WaitGroup
 var filecount int64
 var dircount int64
 var errorcount int64
+
+//path values from flags
+var path string
+var outdir string
 
 func main() {
 	doflags()
@@ -50,9 +57,26 @@ func walkdir(dir string) {
 }
 
 func doflags() {
-	path := flag.String("path", "", "Folder with targa files")
-	outdir := flag.String("out", "", "Output folder where png files will be saved")
+	flag.StringVar(&path, "path", "", "Folder with targa files")
+	flag.StringVar(&outdir, "out", "", "Output folder where png files will be saved")
 	inplace := flag.Bool("i", false, "If set, will ignore output directory and convert files inplace")
 
+	//check flags
+
 	flag.Parse()
+}
+
+//converttga should always be called in a new go function
+func converttga(fname string, outdir string) {
+	defer wg.Done()
+	file, err := os.Open(fname)
+	if err != nil {
+		fmt.Println("Could not open file: ", fname, "\n>>", err.Error())
+		return
+	}
+	img, err := tga.Decode(file)
+	if err != nil {
+		fmt.Println("Error decoding file: ", fname, "\n>>", err.Error())
+		return
+	}
 }
