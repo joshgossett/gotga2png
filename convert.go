@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	// "runtime"
-	// "strings"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -31,7 +31,7 @@ func main() {
 	}()
 	doflags()
 
-	walkdir("/Users/Josh")
+	walkdir(path)
 	wg.Wait()
 	fmt.Printf("Found %d file %d directories and encountered %d errors", filecount, dircount, errorcount)
 }
@@ -51,14 +51,16 @@ func walkdir(dir string) {
 			walkdir(newdir)
 		} else {
 			wg.Add(1)
-			atomic.AddInt64(&filecount, 1)
 			go func(f os.FileInfo, dir string) {
 				defer wg.Done()
 				name := filepath.Join(dir, f.Name())
-				fmt.Println(name)
 				//call a convert method here passing in the filename "name"
-				wg.Add(1)
-				go converttga(name)
+				if strings.ToLower(filepath.Ext(name)) == ".tga" {
+					atomic.AddInt64(&filecount, 1)
+					fmt.Println(name)
+					wg.Add(1)
+					go converttga(name)
+				}
 			}(v, dir)
 		}
 	}
@@ -69,6 +71,13 @@ func doflags() {
 	flag.StringVar(&outdir, "out", "", "Output folder where png files will be saved")
 	flag.Parse()
 
+	//if path is not set then use the current working directory
+	if path == "" {
+		path = filepath.Dir(os.Args[0])
+	}
+
+	fmt.Println("Walking path: ", path)
+
 	//check flags
 	if f, err := os.Stat(path); os.IsNotExist(err) {
 		panic(err)
@@ -78,11 +87,14 @@ func doflags() {
 		panic(f.Name() + " is not a valid directory!")
 	}
 
-	if outdir == "" {
-		outdir = path
-	} else if _, err := os.Stat(outdir); err != nil {
-		panic(err)
-	}
+	// if outdir == "" {
+	outdir = path
+	// }
+
+	// err := os.Mkdir(outdir, os.ModeDir)
+	// if err != nil {
+	// 	panic(outdir)
+	// }
 }
 
 //converttga should always be called in a new go function
