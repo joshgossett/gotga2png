@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	// "runtime"
-	"strings"
+	// "strings"
 	"sync"
 	"sync/atomic"
 )
@@ -57,6 +57,8 @@ func walkdir(dir string) {
 				name := filepath.Join(dir, f.Name())
 				fmt.Println(name)
 				//call a convert method here passing in the filename "name"
+				wg.Add(1)
+				go converttga(name)
 			}(v, dir)
 		}
 	}
@@ -65,7 +67,6 @@ func walkdir(dir string) {
 func doflags() {
 	flag.StringVar(&path, "path", "", "Folder with targa files")
 	flag.StringVar(&outdir, "out", "", "Output folder where png files will be saved")
-	inplace := flag.Bool("i", false, "If set, will ignore output directory and convert files inplace")
 	flag.Parse()
 
 	//check flags
@@ -77,6 +78,11 @@ func doflags() {
 		panic(f.Name() + " is not a valid directory!")
 	}
 
+	if outdir == "" {
+		outdir = path
+	} else if _, err := os.Stat(outdir); err != nil {
+		panic(err)
+	}
 }
 
 //converttga should always be called in a new go function
@@ -87,13 +93,28 @@ func converttga(fname string) {
 		fmt.Println("Could not open file: ", fname, "\n>>", err.Error())
 		return
 	}
+
 	img, err := tga.Decode(file)
 	if err != nil {
 		fmt.Println("Error decoding file: ", fname, "\n>>", err.Error())
 		return
 	}
+
+	newname := getfinaldir(fname)
+	pngfile, err := os.Create(newname)
+	if err != nil {
+		fmt.Println("Error, could not create file: ", newname)
+		return
+	}
+	err = png.Encode(pngfile, img)
+	if err != nil {
+		fmt.Println("Could not Encode file to png: ", fname)
+	}
 }
 
 func getfinaldir(fname string) string {
-	return "" + "hi"
+	partialp := fname[len(path):len(fname)-len(filepath.Ext(fname))] + ".png"
+	newpath := filepath.Join(outdir, partialp)
+	// fmt.Println(newpath)
+	return newpath
 }
